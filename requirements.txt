@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+requests
+apscheduler
+pydantic
+secure-smtplib
+python-dotenv
