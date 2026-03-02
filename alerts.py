@@ -1,35 +1,29 @@
-import os
-from dotenv import load_dotenv
-import smtplib
+from gmail_auth import get_gmail_service
 from email.mime.text import MIMEText
-
-load_dotenv()
-
-EMAIL = os.getenv("EMAIL")
-APP_PASSWORD = os.getenv("APP_PASSWORD")
-TO_EMAIL = os.getenv("TO_EMAIL")
+import base64
 
 def send_weather_alert(event, analysis, prediction):
 
-    subject = "🌤 Autonomous Weather Update"
-    
-    body = f"""
-    Weather Update:
+    service = get_gmail_service()
 
-    Temperature: {event['temperature']} °C
-    Wind Speed: {event['windspeed']} km/h
+    message_text = f"""
+Weather Update:
 
-    Risk Level: {analysis['risk']}
-    Prediction: {prediction['prediction']}
-    """
+Temperature: {event['temperature']} °C
+Wind Speed: {event['windspeed']} km/h
 
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = EMAIL
-    msg['To'] = TO_EMAIL
+Risk Level: {analysis['risk']}
+Prediction: {prediction['prediction']}
+"""
 
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.starttls()
-    server.login(EMAIL, APP_PASSWORD)
-    server.send_message(msg)
-    server.quit()
+    message = MIMEText(message_text)
+    message['to'] = "shubharaj241@gmail.com"
+    message['subject'] = "🌤 Autonomous Weather Update"
+
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+    body = {'raw': raw_message}
+
+    service.users().messages().send(userId="me", body=body).execute()
+
+    print("Email sent via Gmail API")
