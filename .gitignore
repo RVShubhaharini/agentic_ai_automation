@@ -19,3 +19,20 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+
+# Secrets
+.env
+credentials.json
+token.json
+cred.txt
+token.txt
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# Logs
+*.log
