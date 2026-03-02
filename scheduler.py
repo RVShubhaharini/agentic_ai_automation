@@ -8,12 +8,12 @@ def run_agents():
     event = monitoring_agent()
     analysis = analysis_agent(event)
     prediction = prediction_agent(event)
-    decision = decision_agent(analysis, prediction)
-    action = action_agent(decision)
+    decisions = decision_agent(analysis, prediction)
+    actions = action_agent(decisions)
 
-    send_weather_alert(event, analysis, prediction)
+    send_weather_alert(event, analysis, prediction, actions)
 
-    print("Agent Cycle Complete:", action)
+    print("Agent Cycle Complete:", actions)
 
 def start_scheduler():
     scheduler = BackgroundScheduler()
