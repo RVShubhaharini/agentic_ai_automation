@@ -24,5 +24,5 @@ def run_agents():
 def start_scheduler():
     scheduler = BackgroundScheduler()
     # Keeping the 5 minute interval as per original code, suitable for UptimeRobot pings
-    scheduler.add_job(run_agents, 'interval', minutes=1)
+    scheduler.add_job(run_agents, 'interval', minutes=720)
     scheduler.start()
