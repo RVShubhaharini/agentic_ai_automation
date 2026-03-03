@@ -63,12 +63,23 @@ Forecast (Today):
 - Rain Probability: {event.get('rain_probability', 0)}%
 - Expected Precipitation: {event.get('precipitation_mm', 0.0)} mm
 
+Forecast (Tomorrow):
+- Rain Probability: {event.get('tomorrow_rain_probability', 0)}%
+- Expected Precipitation: {event.get('tomorrow_precipitation_mm', 0.0)} mm
+
 Assessments:
 - Heat Risk: {analysis.get('risk', 'N/A')}
-- Rain Prediction: {prediction.get('rain_prediction', 'Data unavailable')}
+- Rain Prediction (Today): {prediction.get('rain_prediction', 'Data unavailable')}
 
 🧠 AI Insights (Groq llama-3.1-8b):
 {prediction.get('ai_insight', 'No explicit AI reasoning provided.')}
+
+💡 Historical Recommendation:
+{prediction.get('email_recommendation', 'No recommendation available.')}
+
+🔮 Future Planning (Tomorrow):
+- Prediction: {prediction.get('future_prediction', 'No prediction available.')}
+- Recommendation: {prediction.get('future_recommendation', 'No recommendation available.')}
 
 Automated Actions Taken:
 - {chr(10).join(['- ' + action for action in actions]) if actions else 'None'}

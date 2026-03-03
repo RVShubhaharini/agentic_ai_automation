@@ -2,7 +2,7 @@ import requests
 import os
 import json
 from groq import Groq
-from memory import store_event
+from memory import store_event, get_historical_events
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,14 +19,20 @@ def monitoring_agent():
     daily = data.get('daily', {})
     
     # Get today's precipitation data
-    rain_probability = daily.get('precipitation_probability_max', [0])[0]
-    precipitation_mm = daily.get('precipitation_sum', [0.0])[0]
+    rain_probability = daily.get('precipitation_probability_max', [0, 0])[0]
+    precipitation_mm = daily.get('precipitation_sum', [0.0, 0.0])[0]
+    
+    # Get tomorrow's precipitation data
+    tomorrow_rain_probability = daily.get('precipitation_probability_max', [0, 0])[1] if len(daily.get('precipitation_probability_max', [])) > 1 else 0
+    tomorrow_precipitation_mm = daily.get('precipitation_sum', [0.0, 0.0])[1] if len(daily.get('precipitation_sum', [])) > 1 else 0.0
     
     event = {
         "temperature": weather['temperature'],
         "windspeed": weather['windspeed'],
         "rain_probability": rain_probability,
-        "precipitation_mm": precipitation_mm
+        "precipitation_mm": precipitation_mm,
+        "tomorrow_rain_probability": tomorrow_rain_probability,
+        "tomorrow_precipitation_mm": tomorrow_precipitation_mm
     }
     
     store_event(event)
@@ -52,7 +58,12 @@ def llm_reasoning_agent(event):
         client = Groq(api_key=api_key)
         
         system_prompt = """You are an autonomous agricultural AI agent.
-Your job is to read real-time weather data and make decisions for a farm.
+Your job is to read real-time weather data, including the forecast for tomorrow, and the history of recent weather events to make decisions for a farm.
+Use the provided history of past events along with the current weather event to determine the trend and predict if rain will come in the future. Explain how the data from the past (like yesterday) informs today's prediction.
+IMPORTANT INSTRUCTION 1: Analyze the past 3 records. 
+- If they show high temperatures, state those temperatures and recommend the farmer to "do irrigation if needed".
+- If they show low temperatures AND there was rain in the past records, state that they had low temperature and rain, and recommend "if wetness remains don't do irrigation, else do it".
+IMPORTANT INSTRUCTION 2: Analyze tomorrow's forecast (provided as `tomorrow_rain_probability` and `tomorrow_precipitation_mm`). Provide a `future_prediction` indicating if it will rain tomorrow, and a `future_recommendation` advising the farmers on how to plan their agricultural activities today in advance of tomorrow's weather.
 
 Available decisions you can make (choose 0 or more):
 - "COOLING_REQUIRED" (if temperature is high and heat stress is likely)
@@ -65,13 +76,17 @@ You must output your response in valid JSON format exactly matching this structu
   "risk": "A short description of heat/weather risk (e.g. HIGH_HEAT, NORMAL)",
   "rain_prediction": "A readable sentence about what farmers should do regarding rain/water.",
   "ai_insight": "A customized 2-5 sentence paragraph explicitly explaining WHY you as the AI made these specific observations and chosen actions based on the immediate weather data.",
+  "email_recommendation": "The requested historical recommendation sentence based on the last 3 records regarding irrigation and temperature.",
+  "future_prediction": "What the weather will look like tomorrow based on the forecast data.",
+  "future_recommendation": "Advance planning recommendation for the farmer based on tomorrow's prediction.",
   "decisions": ["LIST_OF_DECISIONS_FROM_AVAILABLE_LIST"]
 }
 Limit the 'risk' to one or two words.
 Do NOT output any markdown blocks, only the raw JSON text.
 """
 
-        user_prompt = f"Here is the current weather event data:\n{json.dumps(event)}"
+        history = get_historical_events(5)
+        user_prompt = f"Here is the history of recent past weather events:\n{json.dumps(history, indent=2)}\n\nHere is the current weather event data:\n{json.dumps(event, indent=2)}"
 
         response = client.chat.completions.create(
             model=model_name,
@@ -94,5 +109,8 @@ Do NOT output any markdown blocks, only the raw JSON text.
         return {
             "risk": "ERROR",
             "rain_prediction": "Error calling reasoning engine.",
+            "email_recommendation": "No recommendation (Error)",
+            "future_prediction": "Error calling reasoning engine.",
+            "future_recommendation": "No recommendation (Error)",
             "decisions": ["NO_ACTION"]
         }
