@@ -4,11 +4,12 @@ from memory import get_memory
 
 app = FastAPI()
 
-@app.on_event("startup")
-def startup_event():
-    start_scheduler()
+# Start scheduler immediately when app loads
+start_scheduler()
+print("Scheduler started")
 
-@app.get("/")
+# IMPORTANT: Allow GET + HEAD for UptimeRobot
+@app.api_route("/", methods=["GET", "HEAD"])
 def home():
     return {"status": "Agentic AI Running"}
 
